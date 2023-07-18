@@ -35,7 +35,11 @@ pub struct Node {
 
 impl Display for Node {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Node {{ rpc_addr: {}, api_addr: {} }}", self.rpc_addr, self.api_addr)
+        write!(
+            f,
+            "Node {{ rpc_addr: {}, api_addr: {} }}",
+            self.rpc_addr, self.api_addr
+        )
     }
 }
 
@@ -79,7 +83,9 @@ where
     let network = Network {};
 
     // Create a local raft instance.
-    let raft = openraft::Raft::new(node_id, config.clone(), network, log_store, state_machine).await.unwrap();
+    let raft = openraft::Raft::new(node_id, config.clone(), network, log_store, state_machine)
+        .await
+        .unwrap();
 
     let app = Arc::new(App {
         id: node_id,

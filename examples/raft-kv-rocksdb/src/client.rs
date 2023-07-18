@@ -65,7 +65,10 @@ impl ExampleClient {
     /// Read value by key, in an inconsistent mode.
     ///
     /// This method may return stale value because it does not force to read on a legal leader.
-    pub async fn read(&self, req: &String) -> Result<String, RPCError<NodeId, Node, RaftError<NodeId>>> {
+    pub async fn read(
+        &self,
+        req: &String,
+    ) -> Result<String, RPCError<NodeId, Node, RaftError<NodeId>>> {
         self.do_send_rpc_to_leader("api/read", Some(req)).await
     }
 
@@ -75,8 +78,10 @@ impl ExampleClient {
     pub async fn consistent_read(
         &self,
         req: &String,
-    ) -> Result<String, RPCError<NodeId, Node, RaftError<NodeId, CheckIsLeaderError<NodeId, Node>>>> {
-        self.do_send_rpc_to_leader("api/consistent_read", Some(req)).await
+    ) -> Result<String, RPCError<NodeId, Node, RaftError<NodeId, CheckIsLeaderError<NodeId, Node>>>>
+    {
+        self.do_send_rpc_to_leader("api/consistent_read", Some(req))
+            .await
     }
 
     // --- Cluster management API
@@ -87,8 +92,11 @@ impl ExampleClient {
     /// With a initialized cluster, new node can be added with [`write`].
     /// Then setup replication with [`add_learner`].
     /// Then make the new node a member with [`change_membership`].
-    pub async fn init(&self) -> Result<(), RPCError<NodeId, Node, RaftError<NodeId, InitializeError<NodeId, Node>>>> {
-        self.do_send_rpc_to_leader("cluster/init", Some(&Empty {})).await
+    pub async fn init(
+        &self,
+    ) -> Result<(), RPCError<NodeId, Node, RaftError<NodeId, InitializeError<NodeId, Node>>>> {
+        self.do_send_rpc_to_leader("cluster/init", Some(&Empty {}))
+            .await
     }
 
     /// Add a node as learner.
@@ -101,7 +109,8 @@ impl ExampleClient {
         ClientWriteResponse<TypeConfig>,
         RPCError<NodeId, Node, RaftError<NodeId, ClientWriteError<NodeId, Node>>>,
     > {
-        self.send_rpc_to_leader("cluster/add-learner", Some(&req)).await
+        self.send_rpc_to_leader("cluster/add-learner", Some(&req))
+            .await
     }
 
     /// Change membership to the specified set of nodes.
@@ -115,7 +124,8 @@ impl ExampleClient {
         ClientWriteResponse<TypeConfig>,
         RPCError<NodeId, Node, RaftError<NodeId, ClientWriteError<NodeId, Node>>>,
     > {
-        self.send_rpc_to_leader("cluster/change-membership", Some(req)).await
+        self.send_rpc_to_leader("cluster/change-membership", Some(req))
+            .await
     }
 
     /// Get the metrics about the cluster.
@@ -123,8 +133,11 @@ impl ExampleClient {
     /// Metrics contains various information about the cluster, such as current leader,
     /// membership config, replication status etc.
     /// See [`RaftMetrics`].
-    pub async fn metrics(&self) -> Result<RaftMetrics<NodeId, Node>, RPCError<NodeId, Node, RaftError<NodeId>>> {
-        self.do_send_rpc_to_leader("cluster/metrics", None::<&()>).await
+    pub async fn metrics(
+        &self,
+    ) -> Result<RaftMetrics<NodeId, Node>, RPCError<NodeId, Node, RaftError<NodeId>>> {
+        self.do_send_rpc_to_leader("cluster/metrics", None::<&()>)
+            .await
     }
 
     // --- Internal methods
@@ -165,7 +178,10 @@ impl ExampleClient {
         .await
         .map_err(|e| RPCError::Network(NetworkError::new(&e)))?;
 
-        let res: Result<Resp, Err> = resp.json().await.map_err(|e| RPCError::Network(NetworkError::new(&e)))?;
+        let res: Result<Resp, Err> = resp
+            .json()
+            .await
+            .map_err(|e| RPCError::Network(NetworkError::new(&e)))?;
         println!(
             "<<< client recv reply from {}: {}",
             url,
@@ -187,7 +203,11 @@ impl ExampleClient {
     where
         Req: Serialize + 'static,
         Resp: Serialize + DeserializeOwned,
-        Err: std::error::Error + Serialize + DeserializeOwned + TryAsRef<ForwardToLeader<NodeId, Node>> + Clone,
+        Err: std::error::Error
+            + Serialize
+            + DeserializeOwned
+            + TryAsRef<ForwardToLeader<NodeId, Node>>
+            + Clone,
     {
         // Retry at most 3 times to find a valid leader.
         let mut n_retry = 3;

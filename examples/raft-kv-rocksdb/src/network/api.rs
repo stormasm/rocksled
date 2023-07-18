@@ -30,7 +30,9 @@ pub fn rest(app: &mut Server) {
 async fn write(mut req: Request<Arc<App>>) -> tide::Result {
     let body = req.body_json().await?;
     let res = req.state().raft.client_write(body).await;
-    Ok(Response::builder(StatusCode::Ok).body(Body::from_json(&res)?).build())
+    Ok(Response::builder(StatusCode::Ok)
+        .body(Body::from_json(&res)?)
+        .build())
 }
 
 async fn read(mut req: Request<Arc<App>>) -> tide::Result {
@@ -39,7 +41,9 @@ async fn read(mut req: Request<Arc<App>>) -> tide::Result {
     let value = state_machine.get(&key)?;
 
     let res: Result<String, Infallible> = Ok(value.unwrap_or_default());
-    Ok(Response::builder(StatusCode::Ok).body(Body::from_json(&res)?).build())
+    Ok(Response::builder(StatusCode::Ok)
+        .body(Body::from_json(&res)?)
+        .build())
 }
 
 async fn consistent_read(mut req: Request<Arc<App>>) -> tide::Result {
@@ -52,9 +56,14 @@ async fn consistent_read(mut req: Request<Arc<App>>) -> tide::Result {
 
             let value = state_machine.get(&key)?;
 
-            let res: Result<String, CheckIsLeaderError<NodeId, Node>> = Ok(value.unwrap_or_default());
-            Ok(Response::builder(StatusCode::Ok).body(Body::from_json(&res)?).build())
+            let res: Result<String, CheckIsLeaderError<NodeId, Node>> =
+                Ok(value.unwrap_or_default());
+            Ok(Response::builder(StatusCode::Ok)
+                .body(Body::from_json(&res)?)
+                .build())
         }
-        e => Ok(Response::builder(StatusCode::Ok).body(Body::from_json(&e)?).build()),
+        e => Ok(Response::builder(StatusCode::Ok)
+            .body(Body::from_json(&e)?)
+            .build()),
     }
 }
