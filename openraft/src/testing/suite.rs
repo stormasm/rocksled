@@ -83,10 +83,16 @@ where
         run_fut(run_test(builder, Self::last_membership_in_log))?;
         run_fut(run_test(builder, Self::last_membership_in_log_multi_step))?;
         run_fut(run_test(builder, Self::get_membership_initial))?;
-        run_fut(run_test(builder, Self::get_membership_from_log_and_empty_sm))?;
+        run_fut(run_test(
+            builder,
+            Self::get_membership_from_log_and_empty_sm,
+        ))?;
         run_fut(run_test(builder, Self::get_membership_from_log_and_sm))?;
         run_fut(run_test(builder, Self::get_initial_state_without_init))?;
-        run_fut(run_test(builder, Self::get_initial_state_membership_from_log_and_sm))?;
+        run_fut(run_test(
+            builder,
+            Self::get_initial_state_membership_from_log_and_sm,
+        ))?;
         run_fut(run_test(builder, Self::get_initial_state_with_state))?;
         run_fut(run_test(builder, Self::get_initial_state_last_log_gt_sm))?;
         run_fut(run_test(builder, Self::get_initial_state_last_log_lt_sm))?;
@@ -116,24 +122,37 @@ where
         Ok(())
     }
 
-    pub async fn last_membership_in_log_initial(mut store: LS, mut sm: SM) -> Result<(), StorageError<C::NodeId>> {
-        let membership = StorageHelper::new(&mut store, &mut sm).last_membership_in_log(0).await?;
+    pub async fn last_membership_in_log_initial(
+        mut store: LS,
+        mut sm: SM,
+    ) -> Result<(), StorageError<C::NodeId>> {
+        let membership = StorageHelper::new(&mut store, &mut sm)
+            .last_membership_in_log(0)
+            .await?;
 
         assert!(membership.is_empty());
 
         Ok(())
     }
 
-    pub async fn last_membership_in_log(mut store: LS, mut sm: SM) -> Result<(), StorageError<C::NodeId>> {
+    pub async fn last_membership_in_log(
+        mut store: LS,
+        mut sm: SM,
+    ) -> Result<(), StorageError<C::NodeId>> {
         tracing::info!("--- no log, do not read membership from state machine");
         {
-            apply(&mut sm, [
-                blank_ent_0::<C>(1, 1),
-                membership_ent_0::<C>(1, 1, btreeset! {3,4,5}),
-            ])
+            apply(
+                &mut sm,
+                [
+                    blank_ent_0::<C>(1, 1),
+                    membership_ent_0::<C>(1, 1, btreeset! {3,4,5}),
+                ],
+            )
             .await?;
 
-            let mem = StorageHelper::new(&mut store, &mut sm).last_membership_in_log(0).await?;
+            let mem = StorageHelper::new(&mut store, &mut sm)
+                .last_membership_in_log(0)
+                .await?;
 
             assert!(mem.is_empty());
         }
@@ -142,42 +161,67 @@ where
         {
             append(&mut store, [membership_ent_0::<C>(1, 1, btreeset! {1,2,3})]).await?;
 
-            let mem = StorageHelper::new(&mut store, &mut sm).last_membership_in_log(0).await?;
+            let mem = StorageHelper::new(&mut store, &mut sm)
+                .last_membership_in_log(0)
+                .await?;
             assert_eq!(1, mem.len());
             let mem = mem[0].clone();
-            assert_eq!(&Membership::new(vec![btreeset! {1, 2, 3}], None), mem.membership(),);
+            assert_eq!(
+                &Membership::new(vec![btreeset! {1, 2, 3}], None),
+                mem.membership(),
+            );
 
-            let mem = StorageHelper::new(&mut store, &mut sm).last_membership_in_log(1).await?;
+            let mem = StorageHelper::new(&mut store, &mut sm)
+                .last_membership_in_log(1)
+                .await?;
             assert_eq!(1, mem.len());
             let mem = mem[0].clone();
-            assert_eq!(&Membership::new(vec![btreeset! {1, 2, 3}], None), mem.membership(),);
+            assert_eq!(
+                &Membership::new(vec![btreeset! {1, 2, 3}], None),
+                mem.membership(),
+            );
 
-            let mem = StorageHelper::new(&mut store, &mut sm).last_membership_in_log(2).await?;
+            let mem = StorageHelper::new(&mut store, &mut sm)
+                .last_membership_in_log(2)
+                .await?;
             assert!(mem.is_empty());
         }
 
         tracing::info!("--- membership presents in log and > sm.last_applied, read 2 membership entries from log");
         {
-            append(&mut store, [
-                blank_ent_0::<C>(1, 2),
-                membership_ent_0::<C>(1, 3, btreeset! {7,8,9}),
-                blank_ent_0::<C>(1, 4),
-            ])
+            append(
+                &mut store,
+                [
+                    blank_ent_0::<C>(1, 2),
+                    membership_ent_0::<C>(1, 3, btreeset! {7,8,9}),
+                    blank_ent_0::<C>(1, 4),
+                ],
+            )
             .await?;
 
-            let mems = StorageHelper::new(&mut store, &mut sm).last_membership_in_log(0).await?;
+            let mems = StorageHelper::new(&mut store, &mut sm)
+                .last_membership_in_log(0)
+                .await?;
             assert_eq!(2, mems.len());
 
             let mem = mems[0].clone();
-            assert_eq!(&Membership::new(vec![btreeset! {1,2,3}], None), mem.membership(),);
+            assert_eq!(
+                &Membership::new(vec![btreeset! {1,2,3}], None),
+                mem.membership(),
+            );
 
             let mem = mems[1].clone();
-            assert_eq!(&Membership::new(vec![btreeset! {7,8,9}], None), mem.membership(),);
+            assert_eq!(
+                &Membership::new(vec![btreeset! {7,8,9}], None),
+                mem.membership(),
+            );
         }
 
         tracing::info!("--- membership presents in log and > sm.last_applied, read from log but since_index is greater than the last");
         {
-            let mem = StorageHelper::new(&mut store, &mut sm).last_membership_in_log(4).await?;
+            let mem = StorageHelper::new(&mut store, &mut sm)
+                .last_membership_in_log(4)
+                .await?;
             assert!(mem.is_empty());
         }
 
@@ -185,52 +229,89 @@ where
         {
             append(&mut store, [membership_ent_0::<C>(1, 5, btreeset! {10,11})]).await?;
 
-            let mems = StorageHelper::new(&mut store, &mut sm).last_membership_in_log(0).await?;
+            let mems = StorageHelper::new(&mut store, &mut sm)
+                .last_membership_in_log(0)
+                .await?;
             assert_eq!(2, mems.len());
 
             let mem = mems[0].clone();
-            assert_eq!(&Membership::new(vec![btreeset! {7,8,9}], None), mem.membership(),);
+            assert_eq!(
+                &Membership::new(vec![btreeset! {7,8,9}], None),
+                mem.membership(),
+            );
 
             let mem = mems[1].clone();
-            assert_eq!(&Membership::new(vec![btreeset! {10,11}], None), mem.membership(),);
+            assert_eq!(
+                &Membership::new(vec![btreeset! {10,11}], None),
+                mem.membership(),
+            );
         }
 
         Ok(())
     }
 
-    pub async fn last_membership_in_log_multi_step(mut store: LS, mut sm: SM) -> Result<(), StorageError<C::NodeId>> {
+    pub async fn last_membership_in_log_multi_step(
+        mut store: LS,
+        mut sm: SM,
+    ) -> Result<(), StorageError<C::NodeId>> {
         tracing::info!("--- find membership log entry backwards, multiple steps");
         {
-            append(&mut store, [
-                //
-                membership_ent_0::<C>(1, 1, btreeset! {1,2,3}),
-                membership_ent_0::<C>(1, 2, btreeset! {3,4,5}),
-            ])
+            append(
+                &mut store,
+                [
+                    //
+                    membership_ent_0::<C>(1, 1, btreeset! {1,2,3}),
+                    membership_ent_0::<C>(1, 2, btreeset! {3,4,5}),
+                ],
+            )
             .await?;
 
             for i in 3..100 {
                 append(&mut store, [blank_ent_0::<C>(1, i)]).await?;
             }
 
-            append(&mut store, [membership_ent_0::<C>(1, 100, btreeset! {5,6,7})]).await?;
+            append(
+                &mut store,
+                [membership_ent_0::<C>(1, 100, btreeset! {5,6,7})],
+            )
+            .await?;
 
-            let mems = StorageHelper::new(&mut store, &mut sm).last_membership_in_log(0).await?;
+            let mems = StorageHelper::new(&mut store, &mut sm)
+                .last_membership_in_log(0)
+                .await?;
             assert_eq!(2, mems.len());
             let mem = mems[0].clone();
-            assert_eq!(&Membership::new(vec![btreeset! {3,4,5}], None), mem.membership(),);
+            assert_eq!(
+                &Membership::new(vec![btreeset! {3,4,5}], None),
+                mem.membership(),
+            );
 
             let mem = mems[1].clone();
-            assert_eq!(&Membership::new(vec![btreeset! {5,6,7}], None), mem.membership(),);
+            assert_eq!(
+                &Membership::new(vec![btreeset! {5,6,7}], None),
+                mem.membership(),
+            );
         }
 
         Ok(())
     }
 
-    pub async fn get_membership_initial(mut store: LS, mut sm: SM) -> Result<(), StorageError<C::NodeId>> {
-        let mem_state = StorageHelper::new(&mut store, &mut sm).get_membership().await?;
+    pub async fn get_membership_initial(
+        mut store: LS,
+        mut sm: SM,
+    ) -> Result<(), StorageError<C::NodeId>> {
+        let mem_state = StorageHelper::new(&mut store, &mut sm)
+            .get_membership()
+            .await?;
 
-        assert_eq!(&EffectiveMembership::default(), mem_state.committed().as_ref());
-        assert_eq!(&EffectiveMembership::default(), mem_state.effective().as_ref());
+        assert_eq!(
+            &EffectiveMembership::default(),
+            mem_state.committed().as_ref()
+        );
+        assert_eq!(
+            &EffectiveMembership::default(),
+            mem_state.effective().as_ref()
+        );
 
         Ok(())
     }
@@ -245,9 +326,14 @@ where
 
             append(&mut store, [membership_ent_0::<C>(1, 1, btreeset! {1,2,3})]).await?;
 
-            let mem_state = StorageHelper::new(&mut store, &mut sm).get_membership().await?;
+            let mem_state = StorageHelper::new(&mut store, &mut sm)
+                .get_membership()
+                .await?;
 
-            assert_eq!(&EffectiveMembership::default(), mem_state.committed().as_ref());
+            assert_eq!(
+                &EffectiveMembership::default(),
+                mem_state.committed().as_ref()
+            );
             assert_eq!(
                 &Membership::new(vec![btreeset! {1,2,3}], None),
                 mem_state.effective().membership(),
@@ -257,16 +343,24 @@ where
         Ok(())
     }
 
-    pub async fn get_membership_from_log_and_sm(mut store: LS, mut sm: SM) -> Result<(), StorageError<C::NodeId>> {
+    pub async fn get_membership_from_log_and_sm(
+        mut store: LS,
+        mut sm: SM,
+    ) -> Result<(), StorageError<C::NodeId>> {
         tracing::info!("--- no log, read membership from state machine");
         {
-            apply(&mut sm, [
-                blank_ent_0::<C>(1, 1),
-                membership_ent_0::<C>(1, 2, btreeset! {3,4,5}),
-            ])
+            apply(
+                &mut sm,
+                [
+                    blank_ent_0::<C>(1, 1),
+                    membership_ent_0::<C>(1, 2, btreeset! {3,4,5}),
+                ],
+            )
             .await?;
 
-            let mem_state = StorageHelper::new(&mut store, &mut sm).get_membership().await?;
+            let mem_state = StorageHelper::new(&mut store, &mut sm)
+                .get_membership()
+                .await?;
 
             assert_eq!(
                 &Membership::new(vec![btreeset! {3,4,5}], None),
@@ -282,7 +376,9 @@ where
         {
             append(&mut store, [membership_ent_0::<C>(1, 1, btreeset! {1,2,3})]).await?;
 
-            let mem_state = StorageHelper::new(&mut store, &mut sm).get_membership().await?;
+            let mem_state = StorageHelper::new(&mut store, &mut sm)
+                .get_membership()
+                .await?;
 
             assert_eq!(
                 &Membership::new(vec![btreeset! {3,4,5}], None),
@@ -296,13 +392,18 @@ where
 
         tracing::info!("--- membership presents in log and > sm.last_applied, read from log");
         {
-            append(&mut store, [
-                blank_ent_0::<C>(1, 2),
-                membership_ent_0::<C>(1, 3, btreeset! {7,8,9}),
-            ])
+            append(
+                &mut store,
+                [
+                    blank_ent_0::<C>(1, 2),
+                    membership_ent_0::<C>(1, 3, btreeset! {7,8,9}),
+                ],
+            )
             .await?;
 
-            let mem_state = StorageHelper::new(&mut store, &mut sm).get_membership().await?;
+            let mem_state = StorageHelper::new(&mut store, &mut sm)
+                .get_membership()
+                .await?;
 
             assert_eq!(
                 &Membership::new(vec![btreeset! {3,4,5}], None),
@@ -316,13 +417,18 @@ where
 
         tracing::info!("--- two membership present in log and > sm.last_applied, read 2 from log");
         {
-            append(&mut store, [
-                blank_ent_0::<C>(1, 4),
-                membership_ent_0::<C>(1, 5, btreeset! {10,11}),
-            ])
+            append(
+                &mut store,
+                [
+                    blank_ent_0::<C>(1, 4),
+                    membership_ent_0::<C>(1, 5, btreeset! {10,11}),
+                ],
+            )
             .await?;
 
-            let mem_state = StorageHelper::new(&mut store, &mut sm).get_membership().await?;
+            let mem_state = StorageHelper::new(&mut store, &mut sm)
+                .get_membership()
+                .await?;
 
             assert_eq!(
                 &Membership::new(vec![btreeset! {7,8,9}], None),
@@ -337,28 +443,43 @@ where
         Ok(())
     }
 
-    pub async fn get_initial_state_without_init(mut store: LS, mut sm: SM) -> Result<(), StorageError<C::NodeId>> {
-        let initial = StorageHelper::new(&mut store, &mut sm).get_initial_state().await?;
-        let mut want = RaftState::<C::NodeId, C::Node, <C::AsyncRuntime as AsyncRuntime>::Instant>::default();
-        want.vote.update(initial.vote.utime().unwrap(), Vote::default());
+    pub async fn get_initial_state_without_init(
+        mut store: LS,
+        mut sm: SM,
+    ) -> Result<(), StorageError<C::NodeId>> {
+        let initial = StorageHelper::new(&mut store, &mut sm)
+            .get_initial_state()
+            .await?;
+        let mut want =
+            RaftState::<C::NodeId, C::Node, <C::AsyncRuntime as AsyncRuntime>::Instant>::default();
+        want.vote
+            .update(initial.vote.utime().unwrap(), Vote::default());
 
         assert_eq!(want, initial, "uninitialized state");
         Ok(())
     }
 
-    pub async fn get_initial_state_with_state(mut store: LS, mut sm: SM) -> Result<(), StorageError<C::NodeId>> {
+    pub async fn get_initial_state_with_state(
+        mut store: LS,
+        mut sm: SM,
+    ) -> Result<(), StorageError<C::NodeId>> {
         Self::default_vote(&mut store).await?;
 
-        append(&mut store, [
-            blank_ent_0::<C>(0, 0),
-            blank_ent_0::<C>(1, 1),
-            blank_ent_0::<C>(3, 2),
-        ])
+        append(
+            &mut store,
+            [
+                blank_ent_0::<C>(0, 0),
+                blank_ent_0::<C>(1, 1),
+                blank_ent_0::<C>(3, 2),
+            ],
+        )
         .await?;
 
         apply(&mut sm, [blank_ent_0::<C>(3, 1)]).await?;
 
-        let initial = StorageHelper::new(&mut store, &mut sm).get_initial_state().await?;
+        let initial = StorageHelper::new(&mut store, &mut sm)
+            .get_initial_state()
+            .await?;
 
         assert_eq!(
             Some(&log_id_0(3, 2)),
@@ -390,13 +511,18 @@ where
 
         tracing::info!("--- no log, read membership from state machine");
         {
-            apply(&mut sm, [
-                blank_ent_0::<C>(1, 1),
-                membership_ent_0::<C>(1, 2, btreeset! {3,4,5}),
-            ])
+            apply(
+                &mut sm,
+                [
+                    blank_ent_0::<C>(1, 1),
+                    membership_ent_0::<C>(1, 2, btreeset! {3,4,5}),
+                ],
+            )
             .await?;
 
-            let initial = StorageHelper::new(&mut store, &mut sm).get_initial_state().await?;
+            let initial = StorageHelper::new(&mut store, &mut sm)
+                .get_initial_state()
+                .await?;
 
             assert_eq!(
                 &Membership::new(vec![btreeset! {3,4,5}], None),
@@ -408,7 +534,9 @@ where
         {
             append(&mut store, [membership_ent_0::<C>(1, 1, btreeset! {1,2,3})]).await?;
 
-            let initial = StorageHelper::new(&mut store, &mut sm).get_initial_state().await?;
+            let initial = StorageHelper::new(&mut store, &mut sm)
+                .get_initial_state()
+                .await?;
 
             assert_eq!(
                 &Membership::new(vec![btreeset! {3,4,5}], None),
@@ -420,7 +548,9 @@ where
         {
             append(&mut store, [membership_ent_0::<C>(1, 3, btreeset! {1,2,3})]).await?;
 
-            let initial = StorageHelper::new(&mut store, &mut sm).get_initial_state().await?;
+            let initial = StorageHelper::new(&mut store, &mut sm)
+                .get_initial_state()
+                .await?;
 
             assert_eq!(
                 &Membership::new(vec![btreeset! {1,2,3}], None),
@@ -431,14 +561,19 @@ where
         Ok(())
     }
 
-    pub async fn get_initial_state_last_log_gt_sm(mut store: LS, mut sm: SM) -> Result<(), StorageError<C::NodeId>> {
+    pub async fn get_initial_state_last_log_gt_sm(
+        mut store: LS,
+        mut sm: SM,
+    ) -> Result<(), StorageError<C::NodeId>> {
         Self::default_vote(&mut store).await?;
 
         append(&mut store, [blank_ent_0::<C>(0, 0), blank_ent_0::<C>(2, 1)]).await?;
 
         apply(&mut sm, [blank_ent_0::<C>(1, 1), blank_ent_0::<C>(1, 2)]).await?;
 
-        let initial = StorageHelper::new(&mut store, &mut sm).get_initial_state().await?;
+        let initial = StorageHelper::new(&mut store, &mut sm)
+            .get_initial_state()
+            .await?;
 
         assert_eq!(
             Some(&log_id_0(2, 1)),
@@ -448,14 +583,19 @@ where
         Ok(())
     }
 
-    pub async fn get_initial_state_last_log_lt_sm(mut store: LS, mut sm: SM) -> Result<(), StorageError<C::NodeId>> {
+    pub async fn get_initial_state_last_log_lt_sm(
+        mut store: LS,
+        mut sm: SM,
+    ) -> Result<(), StorageError<C::NodeId>> {
         Self::default_vote(&mut store).await?;
 
         append(&mut store, [blank_ent_0::<C>(1, 2)]).await?;
 
         apply(&mut sm, [blank_ent_0::<C>(3, 1)]).await?;
 
-        let initial = StorageHelper::new(&mut store, &mut sm).get_initial_state().await?;
+        let initial = StorageHelper::new(&mut store, &mut sm)
+            .get_initial_state()
+            .await?;
 
         assert_eq!(
             Some(&log_id_0(3, 1)),
@@ -470,7 +610,10 @@ where
         Ok(())
     }
 
-    pub async fn get_initial_state_log_ids(mut store: LS, mut sm: SM) -> Result<(), StorageError<C::NodeId>> {
+    pub async fn get_initial_state_log_ids(
+        mut store: LS,
+        mut sm: SM,
+    ) -> Result<(), StorageError<C::NodeId>> {
         let log_id = |t, n: u64, i| LogId::<C::NodeId> {
             leader_id: CommittedLeaderId::new(t, n.into()),
             index: i,
@@ -478,28 +621,42 @@ where
 
         tracing::info!("--- empty store, expect []");
         {
-            let initial = StorageHelper::new(&mut store, &mut sm).get_initial_state().await?;
-            assert_eq!(Vec::<LogId<C::NodeId>>::new(), initial.log_ids.key_log_ids());
+            let initial = StorageHelper::new(&mut store, &mut sm)
+                .get_initial_state()
+                .await?;
+            assert_eq!(
+                Vec::<LogId<C::NodeId>>::new(),
+                initial.log_ids.key_log_ids()
+            );
         }
 
         tracing::info!("--- log terms: [0], last_purged_log_id is None, expect [(0,0)]");
         {
             append(&mut store, [blank_ent_0::<C>(0, 0)]).await?;
 
-            let initial = StorageHelper::new(&mut store, &mut sm).get_initial_state().await?;
+            let initial = StorageHelper::new(&mut store, &mut sm)
+                .get_initial_state()
+                .await?;
             assert_eq!(vec![log_id(0, 0, 0)], initial.log_ids.key_log_ids());
         }
 
-        tracing::info!("--- log terms: [0,1,1,2], last_purged_log_id is None, expect [(0,0),(1,1),(2,3)]");
+        tracing::info!(
+            "--- log terms: [0,1,1,2], last_purged_log_id is None, expect [(0,0),(1,1),(2,3)]"
+        );
         {
-            append(&mut store, [
-                blank_ent_0::<C>(1, 1),
-                blank_ent_0::<C>(1, 2),
-                blank_ent_0::<C>(2, 3),
-            ])
+            append(
+                &mut store,
+                [
+                    blank_ent_0::<C>(1, 1),
+                    blank_ent_0::<C>(1, 2),
+                    blank_ent_0::<C>(2, 3),
+                ],
+            )
             .await?;
 
-            let initial = StorageHelper::new(&mut store, &mut sm).get_initial_state().await?;
+            let initial = StorageHelper::new(&mut store, &mut sm)
+                .get_initial_state()
+                .await?;
             assert_eq!(
                 vec![log_id(0, 0, 0), log_id(1, 0, 1), log_id(2, 0, 3)],
                 initial.log_ids.key_log_ids()
@@ -510,14 +667,19 @@ where
             "--- log terms: [0,1,1,2,2,3,3], last_purged_log_id is None, expect [(0,0),(1,1),(2,3),(3,5),(3,6)]"
         );
         {
-            append(&mut store, [
-                blank_ent_0::<C>(2, 4),
-                blank_ent_0::<C>(3, 5),
-                blank_ent_0::<C>(3, 6),
-            ])
+            append(
+                &mut store,
+                [
+                    blank_ent_0::<C>(2, 4),
+                    blank_ent_0::<C>(3, 5),
+                    blank_ent_0::<C>(3, 6),
+                ],
+            )
             .await?;
 
-            let initial = StorageHelper::new(&mut store, &mut sm).get_initial_state().await?;
+            let initial = StorageHelper::new(&mut store, &mut sm)
+                .get_initial_state()
+                .await?;
             assert_eq!(
                 vec![
                     log_id(0, 0, 0),
@@ -536,7 +698,9 @@ where
         {
             store.purge(log_id(0, 0, 0)).await?;
 
-            let initial = StorageHelper::new(&mut store, &mut sm).get_initial_state().await?;
+            let initial = StorageHelper::new(&mut store, &mut sm)
+                .get_initial_state()
+                .await?;
             assert_eq!(
                 vec![
                     log_id(0, 0, 0),
@@ -553,9 +717,16 @@ where
         {
             store.purge(log_id(1, 0, 1)).await?;
 
-            let initial = StorageHelper::new(&mut store, &mut sm).get_initial_state().await?;
+            let initial = StorageHelper::new(&mut store, &mut sm)
+                .get_initial_state()
+                .await?;
             assert_eq!(
-                vec![log_id(1, 0, 1), log_id(2, 0, 3), log_id(3, 0, 5), log_id(3, 0, 6)],
+                vec![
+                    log_id(1, 0, 1),
+                    log_id(2, 0, 3),
+                    log_id(3, 0, 5),
+                    log_id(3, 0, 6)
+                ],
                 initial.log_ids.key_log_ids()
             );
         }
@@ -564,18 +735,29 @@ where
         {
             store.purge(log_id(1, 0, 2)).await?;
 
-            let initial = StorageHelper::new(&mut store, &mut sm).get_initial_state().await?;
+            let initial = StorageHelper::new(&mut store, &mut sm)
+                .get_initial_state()
+                .await?;
             assert_eq!(
-                vec![log_id(1, 0, 2), log_id(2, 0, 3), log_id(3, 0, 5), log_id(3, 0, 6)],
+                vec![
+                    log_id(1, 0, 2),
+                    log_id(2, 0, 3),
+                    log_id(3, 0, 5),
+                    log_id(3, 0, 6)
+                ],
                 initial.log_ids.key_log_ids()
             );
         }
 
-        tracing::info!("--- log terms: [x,x,x,x,2,3,3], last_purged_log_id: (2,3), expect [(2,3),(3,5),(3,6)]");
+        tracing::info!(
+            "--- log terms: [x,x,x,x,2,3,3], last_purged_log_id: (2,3), expect [(2,3),(3,5),(3,6)]"
+        );
         {
             store.purge(log_id(2, 0, 3)).await?;
 
-            let initial = StorageHelper::new(&mut store, &mut sm).get_initial_state().await?;
+            let initial = StorageHelper::new(&mut store, &mut sm)
+                .get_initial_state()
+                .await?;
             assert_eq!(
                 vec![log_id(2, 0, 3), log_id(3, 0, 5), log_id(3, 0, 6)],
                 initial.log_ids.key_log_ids()
@@ -586,7 +768,9 @@ where
         {
             store.purge(log_id(3, 0, 6)).await?;
 
-            let initial = StorageHelper::new(&mut store, &mut sm).get_initial_state().await?;
+            let initial = StorageHelper::new(&mut store, &mut sm)
+                .get_initial_state()
+                .await?;
             assert_eq!(vec![log_id(3, 0, 6)], initial.log_ids.key_log_ids());
         }
 
@@ -623,10 +807,18 @@ where
         Ok(())
     }
 
-    pub async fn try_get_log_entry(mut store: LS, mut sm: SM) -> Result<(), StorageError<C::NodeId>> {
+    pub async fn try_get_log_entry(
+        mut store: LS,
+        mut sm: SM,
+    ) -> Result<(), StorageError<C::NodeId>> {
         Self::feed_10_logs_vote_self(&mut store).await?;
 
-        store.purge(LogId::new(CommittedLeaderId::new(0, C::NodeId::default()), 0)).await?;
+        store
+            .purge(LogId::new(
+                CommittedLeaderId::new(0, C::NodeId::default()),
+                0,
+            ))
+            .await?;
 
         let ent = store.try_get_log_entry(3).await?;
         assert_eq!(Some(log_id_0(1, 3)), ent.map(|x| *x.get_log_id()));
@@ -655,11 +847,14 @@ where
 
         tracing::info!("--- only logs");
         {
-            append(&mut store, [
-                blank_ent_0::<C>(0, 0),
-                blank_ent_0::<C>(1, 1),
-                blank_ent_0::<C>(1, 2),
-            ])
+            append(
+                &mut store,
+                [
+                    blank_ent_0::<C>(0, 0),
+                    blank_ent_0::<C>(1, 1),
+                    blank_ent_0::<C>(1, 2),
+                ],
+            )
             .await?;
 
             let st = store.get_log_state().await?;
@@ -673,7 +868,10 @@ where
 
             let st = store.get_log_state().await?;
             assert_eq!(
-                Some(LogId::new(CommittedLeaderId::new(0, C::NodeId::default()), 0)),
+                Some(LogId::new(
+                    CommittedLeaderId::new(0, C::NodeId::default()),
+                    0
+                )),
                 st.last_purged_log_id
             );
             assert_eq!(Some(log_id_0(1, 2)), st.last_log_id);
@@ -729,11 +927,14 @@ where
 
         tracing::info!("--- only logs");
         {
-            append(&mut store, [
-                blank_ent_0::<C>(0, 0),
-                blank_ent_0::<C>(1, 1),
-                blank_ent_0::<C>(1, 2),
-            ])
+            append(
+                &mut store,
+                [
+                    blank_ent_0::<C>(0, 0),
+                    blank_ent_0::<C>(1, 1),
+                    blank_ent_0::<C>(1, 2),
+                ],
+            )
             .await?;
 
             let last_log_id = store.get_log_state().await?.last_log_id;
@@ -758,7 +959,10 @@ where
         Ok(())
     }
 
-    pub async fn last_applied_state(mut store: LS, mut sm: SM) -> Result<(), StorageError<C::NodeId>> {
+    pub async fn last_applied_state(
+        mut store: LS,
+        mut sm: SM,
+    ) -> Result<(), StorageError<C::NodeId>> {
         let (applied, mem) = sm.applied_state().await?;
         assert_eq!(None, applied);
         assert_eq!(StoredMembership::default(), mem);
@@ -770,7 +974,10 @@ where
             let (applied, mem) = sm.applied_state().await?;
             assert_eq!(Some(log_id_0(1, 3)), applied);
             assert_eq!(
-                StoredMembership::new(Some(log_id_0(1, 3)), Membership::new(vec![btreeset! {1,2}], None)),
+                StoredMembership::new(
+                    Some(log_id_0(1, 3)),
+                    Membership::new(vec![btreeset! {1,2}], None)
+                ),
                 mem
             );
         }
@@ -782,7 +989,10 @@ where
             let (applied, mem) = sm.applied_state().await?;
             assert_eq!(Some(log_id_0(1, 5)), applied);
             assert_eq!(
-                StoredMembership::new(Some(log_id_0(1, 3)), Membership::new(vec![btreeset! {1,2}], None)),
+                StoredMembership::new(
+                    Some(log_id_0(1, 3)),
+                    Membership::new(vec![btreeset! {1,2}], None)
+                ),
                 mem
             );
         }
@@ -790,7 +1000,10 @@ where
         Ok(())
     }
 
-    pub async fn purge_logs_upto_0(mut store: LS, mut sm: SM) -> Result<(), StorageError<C::NodeId>> {
+    pub async fn purge_logs_upto_0(
+        mut store: LS,
+        mut sm: SM,
+    ) -> Result<(), StorageError<C::NodeId>> {
         tracing::info!("--- delete (-oo, 0]");
 
         Self::feed_10_logs_vote_self(&mut store).await?;
@@ -811,7 +1024,10 @@ where
         Ok(())
     }
 
-    pub async fn purge_logs_upto_5(mut store: LS, mut sm: SM) -> Result<(), StorageError<C::NodeId>> {
+    pub async fn purge_logs_upto_5(
+        mut store: LS,
+        mut sm: SM,
+    ) -> Result<(), StorageError<C::NodeId>> {
         tracing::info!("--- delete (-oo, 5]");
 
         Self::feed_10_logs_vote_self(&mut store).await?;
@@ -832,7 +1048,10 @@ where
         Ok(())
     }
 
-    pub async fn purge_logs_upto_20(mut store: LS, mut sm: SM) -> Result<(), StorageError<C::NodeId>> {
+    pub async fn purge_logs_upto_20(
+        mut store: LS,
+        mut sm: SM,
+    ) -> Result<(), StorageError<C::NodeId>> {
         tracing::info!("--- delete (-oo, 20]");
 
         Self::feed_10_logs_vote_self(&mut store).await?;
@@ -852,7 +1071,10 @@ where
         Ok(())
     }
 
-    pub async fn delete_logs_since_11(mut store: LS, mut sm: SM) -> Result<(), StorageError<C::NodeId>> {
+    pub async fn delete_logs_since_11(
+        mut store: LS,
+        mut sm: SM,
+    ) -> Result<(), StorageError<C::NodeId>> {
         tracing::info!("--- delete [11, +oo)");
 
         Self::feed_10_logs_vote_self(&mut store).await?;
@@ -872,7 +1094,10 @@ where
         Ok(())
     }
 
-    pub async fn delete_logs_since_0(mut store: LS, mut sm: SM) -> Result<(), StorageError<C::NodeId>> {
+    pub async fn delete_logs_since_0(
+        mut store: LS,
+        mut sm: SM,
+    ) -> Result<(), StorageError<C::NodeId>> {
         tracing::info!("--- delete [0, +oo)");
 
         Self::feed_10_logs_vote_self(&mut store).await?;
@@ -901,7 +1126,12 @@ where
         append(&mut store, [blank_ent_0::<C>(2, 10)]).await?;
 
         let l = store.try_get_log_entries(0..).await?.len();
-        let last = store.try_get_log_entries(0..).await?.into_iter().last().unwrap();
+        let last = store
+            .try_get_log_entries(0..)
+            .await?
+            .into_iter()
+            .last()
+            .unwrap();
 
         assert_eq!(l, 10, "expected 10 entries to exist in the log");
         assert_eq!(*last.get_log_id(), log_id_0(2, 10), "unexpected log id");
@@ -926,10 +1156,13 @@ where
 
         tracing::info!("--- one app log, one membership log");
         {
-            apply(&mut sm, [
-                blank_ent_0::<C>(1, 1),
-                membership_ent_0::<C>(2, 2, btreeset! {3,4}),
-            ])
+            apply(
+                &mut sm,
+                [
+                    blank_ent_0::<C>(1, 1),
+                    membership_ent_0::<C>(2, 2, btreeset! {3,4}),
+                ],
+            )
             .await?;
 
             let mut b = sm.get_snapshot_builder().await;
@@ -1082,7 +1315,9 @@ where
 }
 
 fn log_id_0<NID: NodeId>(term: u64, index: u64) -> LogId<NID>
-where NID: From<u64> {
+where
+    NID: From<u64>,
+{
     LogId {
         leader_id: CommittedLeaderId::new(term, NODE_ID.into()),
         index,
@@ -1091,13 +1326,17 @@ where NID: From<u64> {
 
 /// Create a blank log entry with node_id 0 for test.
 fn blank_ent_0<C: RaftTypeConfig>(term: u64, index: u64) -> C::Entry
-where C::NodeId: From<u64> {
+where
+    C::NodeId: From<u64>,
+{
     C::Entry::new_blank(log_id_0(term, index))
 }
 
 /// Create a membership entry with node_id 0 for test.
 fn membership_ent_0<C: RaftTypeConfig>(term: u64, index: u64, bs: BTreeSet<C::NodeId>) -> C::Entry
-where C::NodeId: From<u64> {
+where
+    C::NodeId: From<u64>,
+{
     C::Entry::new_membership(log_id_0(term, index), Membership::new(vec![bs], ()))
 }
 
@@ -1158,6 +1397,8 @@ where
     let cb = LogFlushed::new(Some(last_log_id), tx);
 
     store.append(entries, cb).await?;
-    rx.await.unwrap().map_err(|e| StorageIOError::write_logs(AnyError::error(e)))?;
+    rx.await
+        .unwrap()
+        .map_err(|e| StorageIOError::write_logs(AnyError::error(e)))?;
     Ok(())
 }

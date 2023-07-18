@@ -20,8 +20,7 @@ use crate::NodeId;
 /// would cause a leader to send an `InstallSnapshot` RPC to a follower based on replication lag.
 ///
 /// Additional policies may become available in the future.
-#[derive(Clone, Debug)]
-#[derive(PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 pub enum SnapshotPolicy {
     /// A snapshot will be generated once the log has grown the specified number of logs since
@@ -36,11 +35,17 @@ pub enum SnapshotPolicy {
 }
 
 impl SnapshotPolicy {
-    pub(crate) fn should_snapshot<NID>(&self, state: &impl Deref<Target = impl LogStateReader<NID>>) -> bool
-    where NID: NodeId {
+    pub(crate) fn should_snapshot<NID>(
+        &self,
+        state: &impl Deref<Target = impl LogStateReader<NID>>,
+    ) -> bool
+    where
+        NID: NodeId,
+    {
         match self {
             SnapshotPolicy::LogsSinceLast(threshold) => {
-                state.committed().next_index() >= state.snapshot_last_log_id().next_index() + threshold
+                state.committed().next_index()
+                    >= state.snapshot_last_log_id().next_index() + threshold
             }
             SnapshotPolicy::Never => false,
         }
@@ -77,10 +82,12 @@ fn parse_snapshot_policy(src: &str) -> Result<SnapshotPolicy, ConfigError> {
         });
     }
 
-    let n_logs = elts[1].parse::<u64>().map_err(|e| ConfigError::InvalidNumber {
-        invalid: src.to_string(),
-        reason: e.to_string(),
-    })?;
+    let n_logs = elts[1]
+        .parse::<u64>()
+        .map_err(|e| ConfigError::InvalidNumber {
+            invalid: src.to_string(),
+            reason: e.to_string(),
+        })?;
     Ok(SnapshotPolicy::LogsSinceLast(n_logs))
 }
 
@@ -116,21 +123,21 @@ pub struct Config {
     pub cluster_name: String,
 
     /// The minimum election timeout in milliseconds
-    #[clap(long, default_value = "150")]
+    #[clap(long, default_value = "3000")]
     pub election_timeout_min: u64,
 
     /// The maximum election timeout in milliseconds
-    #[clap(long, default_value = "300")]
+    #[clap(long, default_value = "4000")]
     pub election_timeout_max: u64,
 
     /// The heartbeat interval in milliseconds at which leaders will send heartbeats to followers
-    #[clap(long, default_value = "50")]
+    #[clap(long, default_value = "2000")]
     pub heartbeat_interval: u64,
 
     /// The timeout for sending then installing the last snapshot segment,
     /// in millisecond. It is also used as the timeout for sending a non-last segment, if
     /// `send_snapshot_timeout` is 0.
-    #[clap(long, default_value = "200")]
+    #[clap(long, default_value = "8000")]
     pub install_snapshot_timeout: u64,
 
     /// The timeout for sending a **non-last** snapshot segment, in milliseconds.
@@ -270,10 +277,11 @@ impl Config {
     ///
     /// The first element in `args` must be the application name.
     pub fn build(args: &[&str]) -> Result<Config, ConfigError> {
-        let config = <Self as Parser>::try_parse_from(args).map_err(|e| ConfigError::ParseError {
-            source: AnyError::from(&e),
-            args: args.iter().map(|x| x.to_string()).collect(),
-        })?;
+        let config =
+            <Self as Parser>::try_parse_from(args).map_err(|e| ConfigError::ParseError {
+                source: AnyError::from(&e),
+                args: args.iter().map(|x| x.to_string()).collect(),
+            })?;
         config.validate()
     }
 
