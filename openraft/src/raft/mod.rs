@@ -188,6 +188,8 @@ where
         let (tx_metrics, rx_metrics) = watch::channel(RaftMetrics::new_initial(id));
         let (tx_shutdown, rx_shutdown) = oneshot::channel();
 
+        tracing::debug!("heartbeat_interval: {:?}", config.heartbeat_interval);
+
         let tick_handle = Tick::spawn(
             Duration::from_millis(config.heartbeat_interval * 3 / 2),
             tx_notify.clone(),

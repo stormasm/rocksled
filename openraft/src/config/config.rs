@@ -123,21 +123,21 @@ pub struct Config {
     pub cluster_name: String,
 
     /// The minimum election timeout in milliseconds
-    #[clap(long, default_value = "3000")]
+    #[clap(long, default_value = "6000")]
     pub election_timeout_min: u64,
 
     /// The maximum election timeout in milliseconds
-    #[clap(long, default_value = "4000")]
+    #[clap(long, default_value = "8000")]
     pub election_timeout_max: u64,
 
     /// The heartbeat interval in milliseconds at which leaders will send heartbeats to followers
-    #[clap(long, default_value = "2000")]
+    #[clap(long, default_value = "4000")]
     pub heartbeat_interval: u64,
 
     /// The timeout for sending then installing the last snapshot segment,
     /// in millisecond. It is also used as the timeout for sending a non-last segment, if
     /// `send_snapshot_timeout` is 0.
-    #[clap(long, default_value = "8000")]
+    #[clap(long, default_value = "16000")]
     pub install_snapshot_timeout: u64,
 
     /// The timeout for sending a **non-last** snapshot segment, in milliseconds.
@@ -161,7 +161,7 @@ pub struct Config {
     ///
     /// This value should be greater than snapshot_policy.SnapshotPolicy.LogsSinceLast, otherwise
     /// transmitting a snapshot may not fix the lagging.
-    #[clap(long, default_value = "5000")]
+    #[clap(long, default_value = "10000")]
     pub replication_lag_threshold: u64,
 
     /// The snapshot policy to use for a Raft node.
@@ -179,7 +179,7 @@ pub struct Config {
     /// The maximum number of logs to keep that are already included in **snapshot**.
     ///
     /// Logs that are not in snapshot will never be purged.
-    #[clap(long, default_value = "1000")]
+    #[clap(long, default_value = "2000")]
     pub max_in_snapshot_log_to_keep: u64,
 
     /// The minimal number of applied logs to purge in a batch.
