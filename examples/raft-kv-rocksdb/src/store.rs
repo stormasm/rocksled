@@ -473,7 +473,7 @@ impl RaftStorage<TypeConfig> for Arc<Store> {
     {
         for entry in entries {
 
-            tracing::info!("{:?}",entry);
+            tracing::info!("{:?} {:?}",entry,entry.payload);
 
             let id = id_to_bin(entry.log_id.index);
             assert_eq!(bin_to_id(&id), entry.log_id.index);
