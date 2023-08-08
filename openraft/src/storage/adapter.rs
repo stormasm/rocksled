@@ -142,6 +142,7 @@ where
         S::get_log_reader(self.storage_mut().await.deref_mut()).await
     }
 
+    #[tracing::instrument(level = "info", skip_all)]
     async fn append<I>(
         &mut self,
         entries: I,
@@ -151,6 +152,8 @@ where
         I: IntoIterator<Item = C::Entry> + OptionalSend,
     {
         // Default implementation that calls the flush-before-return `append_to_log`.
+
+        tracing::info!("before append_to_log");
 
         S::append_to_log(self.storage_mut().await.deref_mut(), entries).await?;
         callback.log_io_completed(Ok(()));
