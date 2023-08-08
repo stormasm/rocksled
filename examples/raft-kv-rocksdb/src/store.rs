@@ -466,12 +466,15 @@ impl RaftStorage<TypeConfig> for Arc<Store> {
         self.get_vote_()
     }
 
-    #[tracing::instrument(level = "trace", skip(self, entries))]
+    #[tracing::instrument(level = "info", skip(self, entries))]
     async fn append_to_log<I>(&mut self, entries: I) -> StorageResult<()>
     where
         I: IntoIterator<Item = Entry<TypeConfig>> + Send,
     {
         for entry in entries {
+
+            tracing::info!("{:?}",entry);
+
             let id = id_to_bin(entry.log_id.index);
             assert_eq!(bin_to_id(&id), entry.log_id.index);
             self.db
